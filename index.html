@@ -223,74 +223,84 @@
 </div>
 
 <script>
-  /* ====== THAY LINK CSV GOOGLE SHEET CỦA BẠN ====== */
+  /* ====== DÁN LINK CSV GOOGLE SHEET CỦA BẠN ====== */
   const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTnWMIpqfGOMbFPWl4_8JIBEpqnv71DmrsBimq6bxEQO8FAPVeI1X2NuVqFH-qxmBn9TPs5e2eunJ7O/pub?gid=0&single=true&output=csv";
 
   const userMap = {};
   const guestsByTable = {};
 
+  // Nạp dữ liệu khi mở trang
   fetch(SHEET_URL)
     .then(res => res.text())
     .then(text => {
-      userMapClear();
-      text.trim().split(/
-?
-/).forEach(line => {
+      // clear dữ liệu cũ
+      for (const k in userMap) delete userMap[k];
+      for (const k in guestsByTable) delete guestsByTable[k];
+
+      text.trim().split(/\r?\n/).forEach(line => {
         const cols = line.split(',');
         if (cols.length < 2) return;
 
-        const user = cols[0]?.trim();
-        const ban = cols[1]?.trim();
-        const lucky = cols[2]?.trim() || '';
-        const arrived = cols[3]?.trim() === '1';
+        const user = (cols[0] || '').trim();
+        const ban = (cols[1] || '').trim();
+        const lucky = (cols[2] || '').trim();
+        const arrived = (cols[3] || '').trim() === '1';
 
         if (!user || !ban) return;
 
         userMap[user.toLowerCase()] = { ban, lucky, arrived };
+
         if (!guestsByTable[ban]) guestsByTable[ban] = [];
         guestsByTable[ban].push(user);
       });
+    })
+    .catch(err => {
+      console.error('Lỗi tải dữ liệu:', err);
     });
 
-  function userMapClear() {
-    for (const k in userMap) delete userMap[k];
-    for (const k in guestsByTable) delete guestsByTable[k];
-  }
-        if (!user || !ban) return;
-
-        const u = user.trim();
-        const b = ban.trim();
-        const l = lucky ? lucky.trim() : '';
-
-        userMap[u.toLowerCase()] = { ban: b, lucky: l, arrived: arrived === '1' };()] = { ban: b, lucky: l };
-        if (!guestsByTable[b]) guestsByTable[b] = [];
-        guestsByTable[b].push(u);
-      });
-    });
-
+  // gắn click cho bàn
   document.querySelectorAll('.table').forEach(t => {
     t.addEventListener('click', () => showGuests(t.dataset.ban));
   });
 
+  // ===== HÀM TRA CỨU (ĐÃ FIX – NÚT HOẠT ĐỘNG 100%) =====
   function traCuu() {
-    document.querySelectorAll('.table').forEach(t => t.classList.remove('highlight'));
-    document.getElementById('guestList').style.display = 'none';
+    try {
+      document.querySelectorAll('.table').forEach(t => t.classList.remove('highlight'));
+      document.getElementById('guestList').style.display = 'none';
 
-    const user = document.getElementById('username').value.trim().toLowerCase();
-    const info = userMap[user];
+      const input = document.getElementById('username');
+      if (!input) return;
 
-    if (!info) {
-      document.getElementById('result').innerHTML = '❌ Không tìm thấy thông tin';
-      return;
+      const user = input.value.trim().toLowerCase();
+      if (!user) {
+        document.getElementById('result').innerHTML = '⚠️ Vui lòng nhập tên';
+        return;
+      }
+
+      const info = userMap[user];
+
+      if (!info) {
+        document.getElementById('result').innerHTML = '❌ Không tìm thấy thông tin';
+        return;
+      }
+
+      const ban = info.ban;
+      const lucky = info.lucky;
+      const arrived = info.arrived;
+
+      const table = document.querySelector(`.table[data-ban="${ban}"]`);
+      if (table) table.classList.add('highlight');
+
+      document.getElementById('result').innerHTML = `
+        🎉 <b>${user}</b> – Bàn <b>${ban}</b><br>
+        🍀 Số may mắn: <b>${lucky || '—'}</b><br>
+        ${arrived ? '✅ <b>Đã check-in</b>' : '❓ <b>Chưa check-in</b>'}<br>
+        👉 Nhấn vào bàn để xem danh sách khách
+      `;
+    } catch (e) {
+      console.error('Lỗi tra cứu:', e);
     }
-
-    const ban = info.ban;
-    const lucky = info.lucky;
-
-    const table = document.querySelector(`.table[data-ban="${ban}"]`);
-    if (table) table.classList.add('highlight');
-
-    document.getElementById('result').innerHTML = `🎉 <b>${user}</b> – Bàn <b>${ban}</b><br>🍀 Số may mắn: <b>${lucky || '—'}</b><br>👉 Nhấn vào bàn để xem danh sách khách`;
   }
 
   function showGuests(ban) {

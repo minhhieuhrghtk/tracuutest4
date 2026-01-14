@@ -224,7 +224,7 @@
 
 <script>
   /* ====== THAY LINK CSV GOOGLE SHEET CỦA BẠN ====== */
-  const SHEET_URL = "PASTE_GOOGLE_SHEET_CSV_URL_HERE";
+  const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTnWMIpqfGOMbFPWl4_8JIBEpqnv71DmrsBimq6bxEQO8FAPVeI1X2NuVqFH-qxmBn9TPs5e2eunJ7O/pub?gid=0&single=true&output=csv";
 
   const userMap = {};
   const guestsByTable = {};
@@ -232,8 +232,28 @@
   fetch(SHEET_URL)
     .then(res => res.text())
     .then(text => {
+      userMapClear();
       text.trim().split(/\r?\n/).forEach(line => {
-        const [user, ban, lucky, arrived] = line.split(',');
+        const cols = line.split(',');
+        if (cols.length < 2) return;
+
+        const user = cols[0]?.trim();
+        const ban = cols[1]?.trim();
+        const lucky = cols[2]?.trim() || '';
+        const arrived = cols[3]?.trim() === '1';
+
+        if (!user || !ban) return;
+
+        userMap[user.toLowerCase()] = { ban, lucky, arrived };
+        if (!guestsByTable[ban]) guestsByTable[ban] = [];
+        guestsByTable[ban].push(user);
+      });
+    });
+
+  function userMapClear() {
+    for (const k in userMap) delete userMap[k];
+    for (const k in guestsByTable) delete guestsByTable[k];
+  }
         if (!user || !ban) return;
 
         const u = user.trim();

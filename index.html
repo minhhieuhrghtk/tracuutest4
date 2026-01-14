@@ -233,7 +233,9 @@
     .then(res => res.text())
     .then(text => {
       userMapClear();
-      text.trim().split(/\r?\n/).forEach(line => {
+      text.trim().split(/
+?
+/).forEach(line => {
         const cols = line.split(',');
         if (cols.length < 2) return;
 
